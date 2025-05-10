@@ -31,7 +31,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET, // You should set this to a strong secret
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // Set to true if using HTTPS
+    cookie: { secure: process.env.NODE_ENV === 'production' } // Set to true if using HTTPS
 }));
 
 app.use('/public', express.static(path.join(__dirname, 'static')));
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
         console.log(req.session.numbers);
         //req.session.history = new Map();//express-session serializes session data to JSON when storing it, and Map objects cannot be properly serialized to JSON.
         req.session.history = []; // Use an array instead of Map
-        req.session.solved = true;
+        req.session.solved = false;
     }
     res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.length > 0, isSolved: req.session.solved } });
 });
