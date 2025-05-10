@@ -28,10 +28,10 @@ const sudoku = require('./functions/getSudoku');
 
 // Set up session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET, // You should set this to a strong secret
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: true } // Set to true if using HTTPS
+    secret: process.env.SESSION_SECRET, // You should set this to a strong secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true if using HTTPS
 }));
 
 app.use('/public', express.static(path.join(__dirname, 'static')));
@@ -43,9 +43,10 @@ app.get('/', (req, res) => {
 
     if (!req.session.numbers) {
         req.session.numbers = sudoku.createSudoku(); // Create a new Sudoku puzzle
+        console.log(req.session.numbers);
         //req.session.history = new Map();//express-session serializes session data to JSON when storing it, and Map objects cannot be properly serialized to JSON.
         req.session.history = []; // Use an array instead of Map
-        req.session.solved = false;
+        req.session.solved = true;
     }
     res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.length > 0, isSolved: req.session.solved } });
 });
@@ -62,9 +63,15 @@ app.post('/', (req, res) => {
         Object.entries(req.body).forEach(([key, value]) => {
             const index = parseInt(key);     // Convert string key to number
             const input = parseInt(value);   // Convert value to number
+
+            // Skip if not a number input or invalid index
+            if (value === '' || isNaN(index) || isNaN(input)) {
+                return;
+            }
+
             if (value != '') {
                 if (validation.isValidMove(req.session.numbers, index, input) == true) {
-                    
+
                     req.session.numbers[index] = input;
                     req.session.history.push({ index, value: input });
                 }
@@ -85,9 +92,9 @@ app.post('/', (req, res) => {
         // };
 
         if (req.session.history.length > 0) {
-        const lastMove = req.session.history.pop(); // Get last move
-        req.session.numbers[lastMove.index] = 0; // Undo the move
-    }
+            const lastMove = req.session.history.pop(); // Get last move
+            req.session.numbers[lastMove.index] = 0; // Undo the move
+        }
     };
 
     if (action === 'newGame') {
@@ -110,5 +117,5 @@ app.post('/', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
