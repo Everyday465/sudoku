@@ -1,6 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+const session = require('express-session');
 const app = express();
 
 const validation = require('./functions/isValid');
@@ -23,13 +26,25 @@ const history = new Map();
 //   0, 4, 5, 2, 8, 6, 1, 7, 0
 // ];
 
+// Set up session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET, // You should set this to a strong secret
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: true } // Set to true if using HTTPS
+}));
 
 app.use('/public', express.static(path.join(__dirname, 'static')));
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
-    res.render('index', { data: { numbers: numbers, canUndo: history.size > 0 } });
+        if (!req.session.numbers) {
+        req.session.numbers = sudoku.createSudoku(); // Create a new Sudoku puzzle
+        req.session.history = new Map();
+        req.session.solved = false;
+    }
+    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.size > 0, isSolved: req.session.solved } });
 });
 
 app.post('/', (req, res) => {
@@ -41,10 +56,10 @@ app.post('/', (req, res) => {
             const index = parseInt(key);     // Convert string key to number
             const input = parseInt(value);   // Convert value to number
             if (value != '') {
-                if (validation.isValidMove(numbers, index, input) == true) {
+                if (validation.isValidMove(req.session.numbers, index, input) == true) {
                     
-                    numbers[index] = input;
-                    history.set(index, input);
+                    req.session.numbers[index] = input;
+                    req.session.history.set(index, input);
                 }
             } else {
                 return;
@@ -53,26 +68,27 @@ app.post('/', (req, res) => {
     };
 
     if (action === 'undo') {
-        const lastEntry = Array.from(history.entries()).pop(); // get last inserted [index, value]
+        const lastEntry = Array.from(req.session.history.entries()).pop(); // get last inserted [index, value]
 
         if (lastEntry) {
             const [index, _] = lastEntry;
-            numbers[index] = 0; // undo the move
-            history.delete(index); // remove from history
+            req.session.numbers[index] = 0; // undo the move
+            req.session.history.delete(index); // remove from history
         };
     };
 
     if (action === 'newGame') {
-        solved = false;
-        numbers = sudoku.createSudoku();
+        req.session.solved = false;
+        req.session.numbers = sudoku.createSudoku();
+        req.session.history.clear();
     };
 
 
-    if (numbers.every(n => n !== 0)) {
-        solved = true;
+    if (req.session.numbers.every(n => n !== 0)) {
+        req.session.solved = true;
     };
 
-    res.render('index', { data: { numbers: numbers, canUndo: history.size > 0, isSolved: solved } });
+    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.size > 0, isSolved: req.session.solved } });
 });
 
 const PORT = process.env.PORT || 3000;
