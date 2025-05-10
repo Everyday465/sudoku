@@ -9,11 +9,11 @@ const app = express();
 const validation = require('./functions/isValid');
 const sudoku = require('./functions/getSudoku');
 
-let numbers = sudoku.createSudoku();
+// let numbers = sudoku.createSudoku();
 
-let solved = false;
+// let solved = false;
 
-const history = new Map();
+// const history = new Map(); 
 // let numbers = [
 //   5, 3, 0, 0, 7, 8, 9, 1, 2,
 //   6, 7, 2, 1, 0, 5, 3, 0, 0,
@@ -39,15 +39,22 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
-        if (!req.session.numbers) {
+    console.log("1 Session contents:", JSON.stringify(req.session, null, 2));
+
+    if (!req.session.numbers) {
         req.session.numbers = sudoku.createSudoku(); // Create a new Sudoku puzzle
-        req.session.history = new Map();
+        //req.session.history = new Map();//express-session serializes session data to JSON when storing it, and Map objects cannot be properly serialized to JSON.
+        req.session.history = []; // Use an array instead of Map
         req.session.solved = false;
     }
-    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.size > 0, isSolved: req.session.solved } });
+    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.length > 0, isSolved: req.session.solved } });
 });
 
 app.post('/', (req, res) => {
+    console.log("2 Session contents:", JSON.stringify(req.session.numbers, null, 2));
+    console.log("2 Session contents:", JSON.stringify(req.session.history, null, 2));
+    console.log("2 Session contents:", JSON.stringify(req.session.solved, null, 2));
+
     console.log(req.body);
     const action = req.body.action;
 
@@ -59,7 +66,7 @@ app.post('/', (req, res) => {
                 if (validation.isValidMove(req.session.numbers, index, input) == true) {
                     
                     req.session.numbers[index] = input;
-                    req.session.history.set(index, input);
+                    req.session.history.push({ index, value: input });
                 }
             } else {
                 return;
@@ -68,19 +75,25 @@ app.post('/', (req, res) => {
     };
 
     if (action === 'undo') {
-        const lastEntry = Array.from(req.session.history.entries()).pop(); // get last inserted [index, value]
+        //for map object
+        // const lastEntry = Array.from(req.session.history.entries()).pop(); // get last inserted [index, value]
 
-        if (lastEntry) {
-            const [index, _] = lastEntry;
-            req.session.numbers[index] = 0; // undo the move
-            req.session.history.delete(index); // remove from history
-        };
+        // if (lastEntry) {
+        //     const [index, _] = lastEntry;
+        //     req.session.numbers[index] = 0; // undo the move
+        //     req.session.history.delete(index); // remove from history
+        // };
+
+        if (req.session.history.length > 0) {
+        const lastMove = req.session.history.pop(); // Get last move
+        req.session.numbers[lastMove.index] = 0; // Undo the move
+    }
     };
 
     if (action === 'newGame') {
         req.session.solved = false;
         req.session.numbers = sudoku.createSudoku();
-        req.session.history.clear();
+        req.session.history = [];
     };
 
 
@@ -88,8 +101,11 @@ app.post('/', (req, res) => {
         req.session.solved = true;
     };
 
-    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.size > 0, isSolved: req.session.solved } });
+    res.render('index', { data: { numbers: req.session.numbers, canUndo: req.session.history.length > 0, isSolved: req.session.solved } });
 });
+
+
+
 
 const PORT = process.env.PORT || 3000;
 

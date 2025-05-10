@@ -20,12 +20,12 @@ function fillSudoku(grid, index = 0) {
     }
 
     const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5); // Shuffle for randomness
-    console.log("index: " + index + " numbers: " + numbers);
+    //console.log("index: " + index + " numbers: " + numbers);
 
     for (let num of numbers) {
         //if not valid it will go next number
         if (validation.isValidMove(grid, index, num)) {
-            console.log("num: " + num + "number: " + numbers);
+            //console.log("num: " + num + "number: " + numbers);
             grid[index] = num; //update list
             if (fillSudoku(grid, index + 1)) return true; // go next index
             grid[index] = 0; // Backtrack
@@ -36,8 +36,7 @@ function fillSudoku(grid, index = 0) {
 
 function removeNumbers(sudoku, removeCount) {
     const indices = Array.from({ length: 81 }, (_, i) => i);
-
-    console.log("indices"+indices);
+    //console.log("indices"+indices);
     // Shuffle the indices
     indices.sort(() => Math.random() - 0.5);
 
