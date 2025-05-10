@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="/public/css/index.css">
+<div class="content">
+    <h1>sudoku</h1>
+    <% if (data.isSolved) { %>
+        <div id="solved-animation" class="fade-in"> Puzzle Solved!</div>
+        <% } %>
+            <form action="/" method="POST" id="form" class="form">
+                <div class="sudukoBox">
+                    <% let i=0; %>
+                        <% data.numbers.forEach(result=>{ %>
+                            <% if(result==0){ %>
+                                <input type="number" class="numberBox formNumber" name="<%= i %>" min="1" max="9">
+                                <% } else {%>
+                                    <div class="numberBox  givenNumber">
+                                        <%= result %>
+                                    </div>
+                                    <% } %>
+                                        <% i++; %>
+                                            <% }) %>
+                </div>
+                <div class="button-row">
+                    <button type="submit" name="action" value="check" class="btn">Check</button>
+                    <button type="submit" name="action" value="undo" class="btn" <% if (!data.canUndo) {
+                        %>disabled<% } %>>Undo</button>
+                    <button type="submit" name="action" value="newGame" class="btn newGamebtn">New game</button>
+                </div>
+            </form>
+
+
+
+
+</div>
